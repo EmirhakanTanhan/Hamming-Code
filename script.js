@@ -58,12 +58,12 @@ const createHammingCode = (size) => {
         controllerComparison[conditionsArr[i]] = dataArrOriginal[conditionsArr[i]] + ' -> ' + dataArr[conditionsArr[i]];
     }
 
-    // console.log('conditionsArr (Indexes of redundant bits) 1+(size)\n', conditionsArr);
-    // console.log('controller (indexes to be controlled) (size)*1\n', controller);
-    // console.log('positionArr (4 digit bits of indexes) (size)*4\n', positionArr);
-    // console.log('dataArrOriginal (Original data array) (size)*4\n', dataArrOriginal);
-    // console.log('dataArr (Data array which redundant bits are updated, also this is the final product) (size)*4\n', dataArr);
-    // console.log('controllerComparison (Comparison of data arrays) (size)*4\n', controllerComparison);
+    // console.log('createHammingCode() | conditionsArr (Indexes of redundant bits) 1+(size)\n', conditionsArr);
+    // console.log('createHammingCode() | controller (indexes to be controlled) (size)\n', controller);
+    // console.log('createHammingCode() | positionArr ((size) digit bits of indexes) 2^(size)\n', positionArr);
+    // console.log('createHammingCode() | dataArrOriginal (Original data array) 2^(size)\n', dataArrOriginal);
+    console.log('createHammingCode() | dataArr (Data array which redundant bits are updated, also this is the final product) 2^(size)\n', dataArr);
+    console.log('createHammingCode() | controllerComparison (Comparison of data arrays) 1+(size)\n', controllerComparison);
 
     return dataArr;
 };
@@ -72,11 +72,13 @@ const createNoiseInData = (data) => {
     const index = Math.floor(Math.random() * data.length); //Choose random index
     data[index] = data[index] ? 0 : 1; //Revert the binary digit in the choosen index
 
+    console.log('createNoiseInData() | index (Index of corrupted bit)\n', index);
+
     return data;
 };
 
-const fixNoiseInData = (data) => {
-    const size = Math.sqrt(data.length); //Calculate the size of data
+const resolveHammingCode = (dataArr) => {
+    const size = Math.log2(dataArr.length); //Calculate the size of data
     const conditionsArr = [];
 
     const positionArr = [];
@@ -98,15 +100,42 @@ const fixNoiseInData = (data) => {
         });
 
         controller[i - 1] = positionBinaryArr; //Gather all of position arrays into one
+        //Controler gets reversed in the process above, and we want it to be reversed
     }
-    controller.reverse(); //Controler gets reversed in the process above, here we reverse it back
 
-    console.log(data)
-    console.log(positionArr)
-    console.log(conditionsArr)
-    console.log(controller)
+    //Check redundant bits for evennes in their area
+    let checker = [];
+    for (let i = 0; i < controller.length; i++) {
+        let evenOneDigitCheck = 0;
+        for (let position of controller[i]) {
+            if (dataArr[position] === 1) evenOneDigitCheck += 1;
+        }
+        //If redundant bit is correct, checker gets set to 0, if not, it gets set to 1
+        evenOneDigitCheck % 2 ? checker[i] = 1 : checker[i] = 0
+    }
+
+    //Convert checker array into string EX:([0,1,1,0] => '0110')
+    let corruptedBitIndex;
+    corruptedBitIndex = checker.join('');
+    //Turn binary to decimal, that 4 or more bit digit gives the index of the corrupted bit EX:('0110' => 6) index 6 bit is corrupted
+    corruptedBitIndex = parseInt(corruptedBitIndex, 2);
+
+    //Duplicate corrupted-or-not data into the fixedDataArr
+    const fixedDataArr = [];
+    dataArr.map(elem => fixedDataArr.push(elem));
+
+    //Fix corrupted bit
+    fixedDataArr[corruptedBitIndex] = fixedDataArr[corruptedBitIndex] ? 0 : 1;
+
+    // console.log('resolveHammingCode() | conditionsArr (Indexes of redundant bits) 1+(size)\n', conditionsArr);
+    // console.log('resolveHammingCode() | controller (Indexes to be controlled) (size)\n', controller);
+    // console.log('resolveHammingCode() | positionArr ((size) digit bits of indexes) 2^(size)\n', positionArr);
+    // console.log('resolveHammingCode() | dataArr (Data array which may be corrupted) 2^(size)\n', dataArr);
+    console.log('resolveHammingCode() | fixedDataArr (Fixed data array, if the given data was not corrupted, it is the same data array. Also this is the final product) 2^(size)\n', fixedDataArr);
+
+    return fixedDataArr;
 }
 
-let data = createHammingCode(4);
+let data = createHammingCode(5);
 data = createNoiseInData(data);
-data = fixNoiseInData(data);
+data = resolveHammingCode(data);
